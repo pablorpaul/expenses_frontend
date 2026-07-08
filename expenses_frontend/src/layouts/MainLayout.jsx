@@ -21,6 +21,9 @@ function MainLayout({ children }){
                 </div>
                 <nav className="sidebar-nav">
                     <Link to="/dashboard" className="nav-item">Dashboard</Link>
+                    <Link to="/expenses" className="nav-item">Despesas</Link>
+                    <Link to="/#" className="nav-item">Atualizações</Link>
+                    <Link to="/#" className="nav-item">Usuário</Link>
                 </nav>
             </aside>
             
