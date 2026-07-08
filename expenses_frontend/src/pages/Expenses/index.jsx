@@ -1,262 +1,304 @@
 import { useEffect, useState } from 'react';
-//import { ownersService } from '../../services/resourcesService';
+import { categoriesService, expensesService } from '../../services/resourcesService';
 import MainLayout from '../../layouts/MainLayout';
+import "../../styles/Expenses/Expenses.css";
 
 const emptyForm = {
-    name: '',
+    title: '',
+    amount: '',
+    categoryId: '',
+    date: '',
     description: ''
 };
 
-export default function Categories() {
+export default function Expenses() {
+    const user = JSON.parse(localStorage.getItem('user'));
+    const [expenses, setExpenses] = useState([]);
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [form, setForm] = useState(emptyForm);
-    const [editingCategory, setEditingCategory] = useState(null);
-    const [detailCategory, setDetailCategory] = useState(null);
+    const [editingExpense, setEditingExpense] = useState(null);
+    const [detailExpense, setDetailExpense] = useState(null);
     const [message, setMessage] = useState('');
 
-    async function loadCategories() {
+    async function loadData() {
         try {
             setLoading(true);
-            const data = await categoriesService.list();
-            setCategories(data);
+
+            const expensesData = await expensesService.list();
+            const categoriesData = await categoriesService.list();
+
+            setExpenses(expensesData);
+            setCategories(categoriesData);
         } catch (error) {
-            setMessage('Erro ao carregar categorias.');
+            setMessage('Erro ao carregar os dados.');
         } finally {
             setLoading(false);
         }
     }
 
     useEffect(() => {
-    loadCategories();
+        loadData();
     }, []);
 
     function handleChange(event) {
         const { name, value } = event.target;
-
         setForm({
-            ...form,
-            [name]: value
+        ...form,
+        [name]: value
         });
     }
 
     function clearForm() {
         setForm(emptyForm);
-        setEditingCategories(null);
+        setEditingExpense(null);
     }
 
-    function clearMessage() {
-        setMessage(null);
-    }
-
-
-    async function handleSubmit(event) {
-        event.preventDefault();
-        if (!form.name || !form.description) {
-            setMessage('Preencha todos os campos.');
-            return;
-        }
-        try {
-            if (editingCategory) {
-            await categoryService.update(editingCategory.id, form);
-            setMessage('Categoria atualizada com sucesso.');
-        } else {
-            await ownersService.create(form);
-            setMessage('Categoria cadastrada com sucesso.');
-        }
-            clearForm();
-            loadCategories();
-        } catch (error) {
-            setMessage('Erro ao salvar categoria.');
-        }
-    }
-
-    function handleEdit(category) {
-        setEditingCategory(category);
-
-        setForm({
-            name: category.name || '',
-            document: category.description || ''
+    function formatMoney(value) {
+        if (!value) return 'R$ 0,00';
+        return Number(value).toLocaleString('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
         });
     }
 
-    async function handleDetails(category) {
+    async function handleSubmit(event) {
+        event.preventDefault();
+
+        if (
+            !form.title ||
+            !form.amount ||
+            !form.categoryId ||
+            !form.date ||
+            !form.description
+        ) {
+            setMessage('Preencha os campos obrigatórios.');
+            return;
+        }
+
+        const payload = {
+            title: form.title,
+            amount: parseFloat(form.amount),
+            categoryId: Number(form.categoryId),
+            date: new Date(form.date),
+            description: form.description,
+            userId: user.id
+        };
+
         try {
-            const data = await categoriesService.getById(category.id);
-            setDetailCategory(data);
+            if (editingExpense) {
+                await expensesService.update(editingExpense.id, payload);
+                setMessage('Despesa atualizada com sucesso.');
+            } else {
+                await expensesService.create(payload);
+                setMessage('Despesa cadastrada com sucesso.');
+            }
+            clearForm();
+            loadData();
         } catch (error) {
-            setMessage('Erro ao carregar detalhes.');
+            setMessage('Erro ao salvar despesa.');
         }
     }
 
-    async function handleDelete(category) {
-        const confirmDelete = window.confirm(`Deseja excluir ${category.name}?`);
+    function handleEdit(expense) {
+        setEditingExpense(expense);
+        setForm({
+            title: expense.title || '',
+            amount: String(expense.amount || ''),
+            categoryId: expense.categoryId || '',
+            date: expense.date || '',
+            description: expense.description || ''
+        });
+    }
 
+    async function handleDetails(expense) {
+        try {
+            const data = await expensesService.getById(expense.id);
+            setDetailExpense(data);
+        } catch (error) {
+            setMessage('Erro ao carregar detalhes da despesa.');
+        }
+    }
+
+    async function handleDelete(expense) {
+        const confirmDelete = window.confirm(
+            `Deseja excluir ${expense.title}?`
+        );
         if (!confirmDelete) return;
-
         try {
-            await categorysService.remove(category.id);
-            setMessage('Dono excluído com sucesso.');
-            loadcategorys();
+            await expensesService.remove(expense.id);
+            setMessage('Despesa excluída com sucesso.');
+            loadData();
         } catch (error) {
-            setMessage('Erro ao excluir dono.');
+            setMessage('Erro ao excluir despesa.');
         }
     }
 
-    const filteredOwners = owners.filter((owner) => {
+    const filteredExpenses = expenses.filter((expense) => {
         const term = search.toLowerCase();
         return (
-            owner.name?.toLowerCase().includes(term) ||
-            owner.document?.toLowerCase().includes(term) ||
-            owner.phone?.toLowerCase().includes(term) ||
-            owner.email?.toLowerCase().includes(term) ||
-            owner.address.toLowerCase().includes(term)
+            expense.title?.toLowerCase().includes(term) ||
+            expense.description?.toLowerCase().includes(term) ||
+            expense.category?.name?.toLowerCase().includes(term) ||
+            expense.amount?.toString().includes(term) ||
+            expense.date?.toLowerCase().includes(term)
         );
     });
 
     if (loading) {
-    return <p>Carregando donos...</p>;
+        return <p>Carregando despesas...</p>;
     }
 
     return (
         <MainLayout>
+            <div className="expenses-container">
+            
+            {/* Cabeçalho da Página */}
             <div className="page-header">
-                <div>
-                    <h1>Gerenciamento de Donos</h1>
-                    <p className="page-subtitle">Gerencie os responsáveis pelos pets cadastrados.</p>
-                </div>
+                <h1>Despesas</h1>
+                <p className="page-subtitle">Cadastre e acompanhe suas despesas.</p>
             </div>
 
+            {/* Mensagens de Alerta com botão de fechar herdado */}
             {message && (
                 <div className="alert-message">
-                    <span>{message}</span>
-                    <button onClick={clearMessage} className="btn-close-alert">✕</button>
+                <span>{message}</span>
+                <button className="btn-close-alert" onClick={() => setMessage('')}>×</button>
                 </div>
             )}
 
-            <div className="owners-card form-section">
-                <h2>{editingOwner ? 'Editar Dono' : 'Novo Dono'}</h2>
-                <form onSubmit={handleSubmit} className="owners-form">
-                    <div className="form-grid">
-                        <div className="input-field">
-                            <label>Nome Completo</label>
-                            <input name="name" value={form.name} onChange={handleChange} placeholder="Ex: João Silva" />
-                        </div>
-                        <div className="input-field">
-                            <label>Documento (CPF/RG)</label>
-                            <input name="document" value={form.document} onChange={handleChange} placeholder="000.000.000-00" />
-                        </div>
-                        <div className="input-field">
-                            <label>Telefone</label>
-                            <input name="phone" value={form.phone} onChange={handleChange} placeholder="(47) 99999-9999" />
-                        </div>
-                        <div className="input-field">
-                            <label>E-mail</label>
-                            <input type="email" name="email" value={form.email} onChange={handleChange} placeholder="joao@email.com" />
-                        </div>
-                        <div className="input-field full-width">
-                            <label>Endereço Residencial</label>
-                            <textarea name="address" value={form.address} onChange={handleChange} placeholder="Rua, número, bairro e cidade" rows="2" />
-                        </div>
+            {/* Card de Cadastro / Edição */}
+            <div className="expenses-card">
+                <h2>{editingExpense ? 'Editar Despesa' : 'Nova Despesa'}</h2>
+                <form onSubmit={handleSubmit}>
+                <div className="form-grid">
+                    <div className="input-field">
+                    <label>Titulo</label>
+                    <input name="title" value={form.title} onChange={handleChange} placeholder="Ex: Almoço no restaurante X" />
                     </div>
                     
-                    <div className="form-actions">
-                        <button type="submit" className="btn-primary">
-                            {editingOwner ? 'Salvar alterações' : 'Cadastrar Dono'}
-                        </button>
-                        {editingOwner && (
-                            <button type="button" onClick={clearForm} className="btn-secondary">
-                                Cancelar
-                            </button>
-                        )}
+                    <div className="input-field">
+                    <label>Valor</label>
+                    <input name="amount" value={form.amount} onChange={handleChange} placeholder="Ex: 50.00" />
                     </div>
+                    
+                    <div className="input-field">
+                    <label>Descrição</label>
+                    <input name="description" value={form.description} onChange={handleChange} placeholder="Ex: Almoço no restaurante X" />
+                    </div>
+                    
+                    <div className="input-field">
+                    <label>Categoria</label>
+                    <select name="categoryId" value={form.categoryId} onChange={handleChange}>
+                        <option value="">Selecione uma categoria</option>
+                        {categories.map((category) => (
+                            <option key={category.id} value={category.id}>{category.name}</option>
+                        ))}
+                    </select>
+                    </div>
+                    
+                    <div className="input-field">
+                    <label>Data </label>
+                    <input type="date" name="date" value={form.date} onChange={handleChange} />
+                    </div>
+                </div>
+
+                <div className="form-actions">
+                    <button type="submit" className="btn-primary">
+                    {editingExpense ? 'Salvar Alterações' : 'Cadastrar Despesa'}
+                    </button>
+                    {editingExpense && (
+                    <button type="button" onClick={clearForm} className="btn-secondary">
+                        Cancelar
+                    </button>
+                    )}
+                </div>
                 </form>
             </div>
 
-            {/* Bloco da Tabela / Lista */}
-            <div className="owners-card list-section">
+            {/* Listagem de Despesas */}
+            <div className="expenses-card">
                 <div className="list-header">
-                    <h2>Lista de Donos</h2>
-                    <span className="badge-count">Total: {owners.length}</span>
+                <h2>Lista de Despesas registradas</h2>
+                <span className="badge-count">
+                    {filteredExpenses.length} {filteredExpenses.length === 1 ? 'despesa' : 'despesas'}
+                </span>
                 </div>
 
                 <div className="search-box">
-                    <input
-                        placeholder="Buscar por nome, documento, telefone, email ou endereço..."
-                        value={search}
-                        onChange={(event) => setSearch(event.target.value)}
-                    />
+                <input
+                    placeholder="Buscar por nome, espécie, raça ou tutor..."
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                />
                 </div>
 
-                {filteredOwners.length === 0 ? (
-                    <p className="no-data">Nenhum dono encontrado.</p>
+                {loading ? (
+                <div className="loading-container">Carregando dados das despesas...</div>
+                ) : filteredExpenses.length === 0 ? (
+                <div className="no-data">Nenhuma despesa encontrada com os critérios de busca.</div>
                 ) : (
-                    <div className="table-wrapper">
-                        <table className="owners-table">
-                            <thead>
-                                <tr>
-                                    <th>Nome</th>
-                                    <th>Documento</th>
-                                    <th>Telefone</th>
-                                    <th>E-mail</th>
-                                    <th className="text-center">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredOwners.map((owner) => (
-                                    <tr key={owner.id}>
-                                        <td className="font-semibold">{owner.name}</td>
-                                        <td>{owner.document}</td>
-                                        <td>{owner.phone}</td>
-                                        <td>{owner.email}</td>
-                                        <td className="table-actions">
-                                            <button onClick={() => handleDetails(owner)} className="btn-action btn-info" title="Detalhes">👁️</button>
-                                            <button onClick={() => handleEdit(owner)} className="btn-action btn-edit" title="Editar">✏️</button>
-                                            <button onClick={() => handleDelete(owner)} className="btn-action btn-danger" title="Excluir">🗑️</button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                <div className="table-wrapper">
+                    <table className="expenses-table">
+                    <thead>
+                        <tr>
+                        <th>Titulo</th>
+                        <th>Valor</th>
+                        <th>Descrição</th>
+                        <th>Categoria</th>
+                        <th>Data</th>
+                        <th style={{ textAlign: 'center' }}>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {filteredExpenses.map((expense) => (
+                        <tr key={expense.id}>
+                            <td className="font-semibold">{expense.title}</td>
+                            <td>{expense.amount?.toFixed(2) || '-'}</td>
+                            <td>{expense.description}</td>
+                            <td>{categories.find((cat) => cat.id === expense.categoryId)?.name || '-'}</td>
+                            <td>{expense.date}</td>
+                            <td>
+                                <div className="table-actions">
+                                    <button onClick={() => handleDetails(expense)} className="btn-action btn-info" title="Ver Detalhes">👁️</button>
+                                    <button onClick={() => handleEdit(expense)} className="btn-action btn-edit" title="Editar">✏️</button>
+                                    <button onClick={() => handleDelete(expense)} className="btn-action btn-danger" title="Excluir">🗑️</button>
+                                </div>
+                            </td>
+                        </tr>
+                        ))}
+                    </tbody>
+                    </table>
+                </div>
                 )}
             </div>
 
-            {/* Painel Lateral / Modal de Detalhes */}
-            {detailOwner && (
-                <div className="details-overlay">
-                    <div className="details-modal">
-                        <h2>Detalhes do Responsável</h2>
-                        <div className="details-grid">
-                            <p><strong>Nome:</strong> {detailOwner.name}</p>
-                            <p><strong>Documento:</strong> {detailOwner.document}</p>
-                            <p><strong>Telefone:</strong> {detailOwner.phone}</p>
-                            <p><strong>Email:</strong> {detailOwner.email}</p>
-                            <p className="full-width"><strong>Endereço:</strong> {detailOwner.address}</p>
-                        </div>
-
-                        <div className="linked-pets">
-                            <h3>🐾 Pets Vinculados</h3>
-                            {detailOwner.pets?.length > 0 ? (
-                                <ul>
-                                    {detailOwner.pets.map((pet) => (
-                                        <li key={pet.id}>{pet.name}</li>
-                                    ))}
-                                </ul>
-                            ) : (
-                                <p className="no-data-small">Nenhum pet vinculado a este dono.</p>
-                            )}
-                        </div>
-
-                        <button onClick={() => setDetailOwner(null)} className="btn-primary full-width">
-                            Fechar detalhes
-                        </button>
+            {detailExpense && (
+                <div className="details-overlay" onClick={() => setDetailExpense(null)}>
+                <div className="details-modal" onClick={(e) => e.stopPropagation()}>
+                    <div className="list-header" style={{ marginBottom: '1.5rem' }}>
+                    <h2 style={{ margin: 0 }}>Ficha Clínica: {detailExpense.title}</h2>
+                    <button className="btn-close-alert" style={{ fontSize: '1.5rem' }} onClick={() => setDetailExpense(null)}>×</button>
                     </div>
+                    
+                    <div className="details-grid">
+                        <p><strong>Titulo:</strong> {detailExpense.title}</p>
+                        <p><strong>Valor:</strong> {detailExpense.amount?.toFixed(2) || '-'}</p>
+                        <p><strong>Descrição:</strong> {detailExpense.description || '-'}</p>
+                        <p><strong>Categoria:</strong> {categories.find((cat) => cat.id === detailExpense.categoryId)?.name || '-'}</p>
+                        <p><strong>Data:</strong> {detailExpense.date}</p>
+                    </div>
+
+                    <button onClick={() => setDetailExpense(null)} className="btn-secondary full-width">
+                    Fechar
+                    </button>
+                </div>
                 </div>
             )}
+
+            </div>
         </MainLayout>
     );
 }
-
 

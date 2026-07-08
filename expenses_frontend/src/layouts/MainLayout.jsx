@@ -1,11 +1,11 @@
 import  { Outlet, Link, useNavigate } from "react-router-dom";
-//import { Context } from "express-validator/lib/context";
-//import { AuthContext } from "../contexts/AuthContext";
+import { AuthContext } from "../contexts/AuthContext";
 import { useContext } from "react";
-//import "../styles/MainLayout/style.css";
+import "../styles/MainLayout/MainLayout.css";
+
 
 function MainLayout({ children }){
-    //const { logout } = useContext(AuthContext);
+    const { logout } = useContext(AuthContext);
     const navigate = useNavigate();
 
     function handleLogout(){
@@ -22,7 +22,7 @@ function MainLayout({ children }){
                 <nav className="sidebar-nav">
                     <Link to="/dashboard" className="nav-item">Dashboard</Link>
                     <Link to="/expenses" className="nav-item">Despesas</Link>
-                    <Link to="/#" className="nav-item">Atualizações</Link>
+                    <Link to="/categories" className="nav-item">Categorias</Link>
                     <Link to="/#" className="nav-item">Usuário</Link>
                 </nav>
             </aside>

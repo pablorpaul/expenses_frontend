@@ -1,0 +1,74 @@
+/* --- CONTAINER PRINCIPAL --- */
+.expenses-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* --- CARDS DE CONTEÚDO --- */
+.expenses-card {
+  background: #ffffff;
+  padding: 24px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.expenses-card h2 {
+  font-size: 1.2rem;
+  color: #1e293b;
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-weight: 600;
+}
+
+/* --- FORMULÁRIO COM SELECTS --- */
+.input-field select {
+  padding: 10px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  outline: none;
+  background-color: #fff;
+  transition: border-color 0.2s;
+  cursor: pointer;
+}
+
+.input-field select:focus {
+  border-color: #3b82f6;
+}
+
+/* --- TABELA DE DESPESAS --- */
+.expenses-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.expenses-table th, 
+.expenses-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 0.95rem;
+}
+
+.expenses-table th {
+  background-color: #f8fafc;
+  color: #64748b;
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.expenses-table tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+/* --- ESTADOS AUXILIARES --- */
+.loading-container {
+  text-align: center;
+  color: #64748b;
+  padding: 30px;
+  font-weight: 500;
+}
